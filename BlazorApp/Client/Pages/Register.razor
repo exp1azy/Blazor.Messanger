@@ -1,0 +1,83 @@
+﻿@page "/register"
+
+@using BlazorApp.Shared
+@using Newtonsoft.Json
+@inject HttpClient httpClient
+@inject NavigationManager Navigation
+
+<PageTitle>Регистрация</PageTitle>
+
+<div class="bm-reg-form">
+    <EditForm class="needs-validation" novalidate Model="@Registration" OnSubmit="SendAsync">
+
+        <div class="form-row">
+            <label for="validationTooltip01">Имя</label>
+            <input type="text" class="form-control" id="validationTooltip01" placeholder="Введите ваше имя" @bind-value="Registration.Name" required>
+            <div class="invalid-tooltip">
+                Введите корректное имя.
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label for="validationTooltipUsername">Никнейм</label>
+            <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="validationTooltipUsernamePrepend">#</span>
+            </div>
+            <input type="text" class="form-control" id="validationTooltipUsername" placeholder="Введите ваш никнейм" aria-describedby="validationTooltipUsernamePrepend" @bind-value="Registration.Username" required>
+            <div class="invalid-tooltip">
+                Введите корректный никнейм.
+            </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label for="validationTooltip03">Пароль</label>
+            <input type="text" class="form-control" id="validationTooltip03" placeholder="Введите ваш пароль" @bind-value="Registration.Password" required>
+            <div class="invalid-tooltip">
+                Введите корректный пароль.
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label for="validationTooltip04">Email</label>
+            <input type="text" class="form-control" id="validationTooltip04" placeholder="Введите ваш email" @bind-value="Registration.Email" required>
+            <div class="invalid-tooltip">
+                Введите корректный email.
+            </div>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Подтвердить</button>
+
+        @if (Message != null)
+        {
+            <span>@Message</span>
+        }
+
+        <NavLink href="auth">
+            <span>Уже зарегистрированы?</span>
+        </NavLink>
+
+    </EditForm>
+</div>
+
+@code {
+    private RegisterModel Registration = new RegisterModel();
+    private string Message { get; set; }
+
+    private async Task SendAsync()
+    {
+        var response = await httpClient.PostAsJsonAsync("http://localhost:5169/api/user/register", Registration);
+        var result = await response.Content.ReadFromJsonAsync<ResultModel>();
+        Message = result.Message;
+
+        if (response.IsSuccessStatusCode)
+        {
+            StateHasChanged();
+
+            await Task.Delay(1000);
+
+            Navigation.NavigateTo("/auth");
+        }
+    }
+}

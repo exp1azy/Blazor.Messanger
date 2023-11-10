@@ -1,0 +1,92 @@
+﻿@page "/auth"
+
+@using BlazorApp.Shared
+@using Newtonsoft.Json
+@using BlazorApp.Client.Services
+@inject NavigationManager Navigation
+@inject HttpClient HttpClient
+@inject CustomAuthenticationStateProvider AuthenticationStateProvider
+@inject ITokenService TokenService
+
+<PageTitle>Авторизация</PageTitle>
+
+<div class="ba-reg-form">
+    <EditForm class="needs-validation" novalidate Model="@Authorization" OnSubmit="SendAsync">
+
+        <div class="form-row">
+            <label for="validationTooltipUsername">Никнейм</label>
+            <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="validationTooltipUsernamePrepend">#</span>
+            </div>
+            <input type="text" class="form-control" id="validationTooltipUsername" placeholder="Введите ваш никнейм" aria-describedby="validationTooltipUsernamePrepend" @bind-value="Authorization.Username" required>
+            <div class="invalid-tooltip">
+                Введите корректный никнейм.
+            </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label for="validationTooltip03">Пароль</label>
+            <input type="text" class="form-control" id="validationTooltip03" placeholder="Введите ваш пароль" @bind-value="Authorization.Password" required>
+            <div class="invalid-tooltip">
+                Введите корректный пароль.
+            </div>
+        </div>
+
+        <div class="ba-auth">  
+            <div class="ba-auth-confirm">
+                <button class="btn btn-primary" type="submit">Подтвердить</button>
+
+                <NavLink href="register">
+                    <span>Еще нет аккаунта?</span>
+                </NavLink>
+            </div>
+           
+            @if (Message != null)
+            {
+                <span>@Message</span>
+            }
+        </div>
+
+    </EditForm>
+</div>
+
+@code {
+    private AuthModel Authorization = new AuthModel();
+    private string Message { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity.IsAuthenticated)
+        {          
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        var response = await HttpClient.PostAsJsonAsync("http://localhost:5169/api/user/login", Authorization);
+        var result = await response.Content.ReadFromJsonAsync<ResultModel>();
+
+        if (response.IsSuccessStatusCode)
+        {
+            await TokenService.SetToken(result.Jwt);
+            
+            Message = result.Message;
+            StateHasChanged();
+
+            await Task.Delay(1000);
+
+            AuthenticationStateProvider.StateChanged();
+                    
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            Message = $"{result.Message}";
+            StateHasChanged();
+        }
+    }
+}
